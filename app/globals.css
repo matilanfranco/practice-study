@@ -1,26 +1,192 @@
-@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
 
+/* ─── Reset ───────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body  { min-height: 100vh; background: #F7F6F2; }
+
+/* ─── Tokens ──────────────────────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg:          #F7F6F2;
+  --bg-warm:     #F2F0EA;
+  --surface:     #FEFDFA;
+  --primary:     #4A7C59;
+  --primary-lt:  #6B9E7A;
+  --primary-xl:  #C8D9C2;
+  --primary-bg:  #EDF3EB;
+  --text:        #1A2819;
+  --muted:       #7A917D;
+  --faint:       #9BB09E;
+  --border:      #DDE8D8;
+  --danger:      #B03030;
+  --warning:     #B86020;
+  --warn-bg:     #FEF0E6;
+  --warn-border: #F5C99A;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ─── App shell ───────────────────────────────────────────────────────────── */
+.ps-app {
+  max-width: 430px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--bg);
+  position: relative;
+  overflow-x: hidden;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Paper grain texture */
+.ps-app::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 9999;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ─── Typography ──────────────────────────────────────────────────────────── */
+.serif { font-family: 'DM Serif Display', serif; }
+
+/* ─── Layout helpers ──────────────────────────────────────────────────────── */
+.screen        { padding: 58px 20px 100px; }
+.screen-flush  { padding: 0 0 100px; }
+.overlay {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  background: var(--bg);
+  z-index: 200;
+  overflow-y: auto;
 }
+
+/* ─── Cards ───────────────────────────────────────────────────────────────── */
+.card    { background: var(--surface); border-radius: 18px; border: 1px solid var(--border); padding: 20px; }
+.card-sm { background: var(--surface); border-radius: 14px; border: 1px solid var(--border); padding: 14px 16px; }
+
+/* ─── Buttons ─────────────────────────────────────────────────────────────── */
+.btn-primary {
+  display: block; width: 100%;
+  background: var(--primary); color: #fff;
+  border: none; border-radius: 14px;
+  padding: 16px 28px; font-size: 15px; font-weight: 600;
+  cursor: pointer; font-family: 'DM Sans', sans-serif;
+  transition: background 0.15s, transform 0.1s;
+}
+.btn-primary:hover   { background: #3D6B4A; }
+.btn-primary:active  { transform: scale(0.98); }
+.btn-primary:disabled { background: #A8C5B2; cursor: not-allowed; }
+
+.btn-secondary {
+  display: block;
+  background: transparent; color: var(--primary);
+  border: 1.5px solid var(--primary-xl); border-radius: 14px;
+  padding: 14px 24px; font-size: 14px; font-weight: 500;
+  cursor: pointer; font-family: 'DM Sans', sans-serif;
+  transition: background 0.15s;
+}
+.btn-secondary:hover { background: var(--primary-bg); }
+
+.btn-ghost {
+  background: transparent; border: none;
+  color: var(--muted); cursor: pointer;
+  font-family: 'DM Sans', sans-serif; font-size: 14px;
+  transition: color 0.15s; padding: 4px;
+}
+.btn-ghost:hover { color: var(--text); }
+
+/* ─── Form elements ───────────────────────────────────────────────────────── */
+.input {
+  width: 100%; border: 1.5px solid var(--border); border-radius: 12px;
+  padding: 13px 16px; font-size: 15px; color: var(--text);
+  background: #fff; font-family: 'DM Sans', sans-serif;
+  outline: none; transition: border-color 0.15s;
+}
+.input:focus   { border-color: var(--primary); }
+textarea.input { resize: none; line-height: 1.55; }
+select.input   { appearance: none; cursor: pointer; }
+input[type="range"] { width: 100%; accent-color: var(--primary); cursor: pointer; }
+
+/* ─── Chips ───────────────────────────────────────────────────────────────── */
+.chip {
+  padding: 10px 18px; border-radius: 100px;
+  border: 1.5px solid var(--border); background: white;
+  cursor: pointer; font-size: 14px; font-weight: 500;
+  color: var(--muted); display: flex; align-items: center; gap: 6px;
+  white-space: nowrap; font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+}
+.chip.active { background: var(--primary-bg); border-color: var(--primary); color: var(--primary); }
+
+/* ─── Badges ──────────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  border-radius: 100px; padding: 5px 13px; font-size: 12px; font-weight: 600;
+}
+.badge-green  { background: var(--primary-bg); color: var(--primary);  border: 1px solid var(--primary-xl); }
+.badge-orange { background: var(--warn-bg);    color: var(--warning);  border: 1px solid var(--warn-border); }
+.badge-faint  { background: var(--primary-bg); color: #3D7050; }
+
+/* ─── Bottom nav ──────────────────────────────────────────────────────────── */
+.bottom-nav {
+  position: fixed; bottom: 0;
+  left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 430px;
+  background: rgba(254, 253, 250, 0.93);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  padding: 10px 0 max(10px, env(safe-area-inset-bottom));
+  z-index: 100;
+}
+.nav-tab {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; gap: 3px;
+  cursor: pointer; background: none; border: none; padding: 6px;
+}
+.nav-tab span       { font-size: 11px; font-weight: 500; color: var(--faint); font-family: 'DM Sans', sans-serif; transition: color 0.15s; }
+.nav-tab.active span { color: var(--primary); }
+
+/* ─── Timer ───────────────────────────────────────────────────────────────── */
+.timer-ring {
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  transition: stroke-dashoffset 0.7s ease, stroke 0.4s ease;
+}
+.timer-num { font-family: 'DM Serif Display', serif; }
+
+/* ─── Week dots ───────────────────────────────────────────────────────────── */
+.week-dot { width: 11px; height: 11px; border-radius: 50%; }
+
+/* ─── Stars ───────────────────────────────────────────────────────────────── */
+.star { font-size: 30px; cursor: pointer; transition: transform 0.1s; color: var(--border); line-height: 1; }
+.star.on    { color: var(--primary); }
+.star:hover { transform: scale(1.15); }
+.star:active { transform: scale(0.92); }
+
+/* ─── Animations ──────────────────────────────────────────────────────────── */
+.fade-in  { animation: fadeIn  0.3s  ease both; }
+.slide-up { animation: slideUp 0.35s ease both; }
+
+@keyframes fadeIn  { from { opacity: 0; transform: translateY(8px);  } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes blink   { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes overtimePulse {
+  0%, 100% { box-shadow: 0 0 0 0    rgba(192, 100, 30, 0.2); }
+  50%      { box-shadow: 0 0 0 16px rgba(192, 100, 30, 0);   }
+}
+
+.timer-paused .timer-num { animation: blink 1.4s ease infinite; }
+.timer-overtime           { animation: overtimePulse 1.2s ease infinite; }
+
+/* ─── Scrollbar ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 0; }
