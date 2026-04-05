@@ -229,6 +229,9 @@ input[type="range"] { width: 100%; accent-color: var(--primary); cursor: pointer
 
 /* ─── Desktop ── */
 @media (min-width: 768px) {
+ .overlay {
+    max-width: none;
+  }
   .ps-app     { max-width: 100%; background-attachment: fixed; }
   .ps-app::after { max-width: 100%; }
   .bottom-nav { max-width: 100%; padding: 12px 40px; }
