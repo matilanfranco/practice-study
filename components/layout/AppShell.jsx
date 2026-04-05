@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { AppProvider, useApp } from "@/context/AppContext";
+import { useState, useEffect } from "react";
+import { AppProvider, useApp }  from "@/context/AppContext";
+import { startReminderCheck }   from "@/lib/notifications";
 import AuthScreen       from "@/components/auth/AuthScreen";
+import OnboardingScreen from "@/components/onboarding/OnboardingScreen";
 import DashboardScreen  from "@/components/dashboard/DashboardScreen";
 import HistoryScreen    from "@/components/history/HistoryScreen";
 import ProfileScreen    from "@/components/profile/ProfileScreen";
@@ -12,17 +14,30 @@ import SessionScreen    from "@/components/session/SessionScreen";
 import BlockLog         from "@/components/session/BlockLog";
 import BreakScreen      from "@/components/session/BreakScreen";
 
+const ONBOARDING_KEY = "ps_onboarding_done";
+
 function Inner() {
   const { user, loading, session, startSession, updateSession, endSession, addBlock } = useApp();
-  const [view, setView] = useState("dashboard");
+  const [view,       setView]       = useState("dashboard");
+  const [onboarded,  setOnboarded]  = useState(true); // assume done until checked
+
+  // Check onboarding and start notification checker
+  useEffect(() => {
+    const done = localStorage.getItem(ONBOARDING_KEY);
+    if (!done) setOnboarded(false);
+    startReminderCheck();
+  }, []);
+
+  const finishOnboarding = () => {
+    localStorage.setItem(ONBOARDING_KEY, "1");
+    setOnboarded(true);
+  };
 
   // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) return (
     <div style={{
-      minHeight: "100dvh",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
+      minHeight: "100dvh", display: "flex",
+      alignItems: "center", justifyContent: "center",
       background: "var(--bg)",
     }}>
       <div className="serif" style={{ fontSize: 28, color: "var(--primary)" }}>
@@ -33,6 +48,9 @@ function Inner() {
 
   // ── Not authenticated ────────────────────────────────────────────────────
   if (!user) return <AuthScreen />;
+
+  // ── Onboarding ───────────────────────────────────────────────────────────
+  if (!onboarded) return <OnboardingScreen onDone={finishOnboarding} />;
 
   // ── Session overlay ──────────────────────────────────────────────────────
   if (session) {
@@ -51,7 +69,6 @@ function Inner() {
               }}
             />
           )}
-
           {phase === "session" && (
             <SessionScreen
               blockNum={blockNum}
@@ -59,7 +76,6 @@ function Inner() {
               onEnd={(el) => updateSession({ phase: "log", elapsed: el })}
             />
           )}
-
           {phase === "log" && (
             <BlockLog
               elapsed={elapsed}
@@ -70,22 +86,13 @@ function Inner() {
               }}
             />
           )}
-
           {phase === "break" && (
             <BreakScreen
               blockNum={blockNum}
               onNext={() =>
-                updateSession({
-                  phase: "setup",
-                  blockNum: blockNum + 1,
-                  targetSec: null,
-                  elapsed: 0,
-                })
+                updateSession({ phase: "setup", blockNum: blockNum + 1, targetSec: null, elapsed: 0 })
               }
-              onEnd={() => {
-                endSession();
-                setView("dashboard");
-              }}
+              onEnd={() => { endSession(); setView("dashboard"); }}
             />
           )}
         </div>
