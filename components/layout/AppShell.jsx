@@ -73,13 +73,14 @@ function Inner() {
             <SessionScreen
               blockNum={blockNum}
               targetSec={targetSec}
-              onEnd={(el) => updateSession({ phase: "log", elapsed: el })}
+              onEnd={(el, blockNotes) => updateSession({ phase: "log", elapsed: el, blockNotes })}
             />
           )}
           {phase === "log" && (
             <BlockLog
               elapsed={elapsed}
               blockNum={blockNum}
+              notes={session.blockNotes || []}
               onConfirm={(data) => {
                 addBlock({ ...data, blockNum });
                 updateSession({ phase: "break" });

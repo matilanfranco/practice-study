@@ -9,10 +9,12 @@ export function useBlockTimer() {
   const [running,  setRunning]  = useState(false);
   const [overtime, setOvertime] = useState(false);
 
-  const tgt$   = useRef(25 * 60);
-  const run$   = useRef(false);
-  const int$   = useRef(null);
-  const fired$ = useRef(new Set());
+  const tgt$      = useRef(25 * 60);
+  const run$      = useRef(false);
+  const int$      = useRef(null);
+  const startTs$  = useRef(null); // timestamp when started
+  const baseElap$ = useRef(0);    // elapsed before last start
+  const fired$    = useRef(new Set());
 
   const setTarget = (v) => {
     tgt$.current = v;
@@ -23,37 +25,43 @@ export function useBlockTimer() {
   const startInterval = () => {
     clearInterval(int$.current);
     int$.current = setInterval(() => {
-      setElapsed((e) => {
-        const n = e + 1;
-        if (n >= tgt$.current) {
-          const over = n - tgt$.current;
-          setOvertime(true);
-          if (!fired$.current.has(over) && (over === 0 || over % 60 === 0)) {
-            fired$.current.add(over);
-            playBlockAlarm();
-          }
+      if (!run$.current || !startTs$.current) return;
+      const now     = Date.now();
+      const elapsed = baseElap$.current + Math.floor((now - startTs$.current) / 1000);
+      setElapsed(elapsed);
+      if (elapsed >= tgt$.current) {
+        const over = elapsed - tgt$.current;
+        setOvertime(true);
+        if (!fired$.current.has(Math.floor(over / 60)) && over % 60 === 0) {
+          fired$.current.add(Math.floor(over / 60));
+          playBlockAlarm();
         }
-        return n;
-      });
-    }, 1000);
+      }
+    }, 500); // check every 500ms for accuracy
   };
 
   const start = () => {
     if (run$.current) return;
-    run$.current = true;
+    run$.current   = true;
+    startTs$.current = Date.now();
     setRunning(true);
     startInterval();
   };
 
   const pause = () => {
-    run$.current = false;
+    if (!run$.current) return;
+    // save elapsed before pausing
+    baseElap$.current = baseElap$.current + Math.floor((Date.now() - startTs$.current) / 1000);
+    startTs$.current  = null;
+    run$.current      = false;
     setRunning(false);
     clearInterval(int$.current);
   };
 
   const resume = () => {
     if (run$.current) return;
-    run$.current = true;
+    startTs$.current = Date.now();
+    run$.current     = true;
     setRunning(true);
     startInterval();
   };
@@ -61,6 +69,8 @@ export function useBlockTimer() {
   const reset = () => {
     pause();
     setElapsed(0);
+    baseElap$.current = 0;
+    startTs$.current  = null;
     setOvertime(false);
     fired$.current.clear();
   };

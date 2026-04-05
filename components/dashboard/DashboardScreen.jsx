@@ -3,6 +3,7 @@
 import { useApp } from "@/context/AppContext";
 import { fmt, getStreak, getTodayTime, getWeekBlocks, instrEmoji, getGreeting, getStreakMessage, getWeekDots, todayStr } from "@/lib/helpers";
 import { CATEGORIES } from "@/lib/constants";
+import ExercisesPanel from "@/components/dashboard/ExercisesPanel";
 
 export default function DashboardScreen({ onStart }) {
   const { user, blocks } = useApp();
@@ -95,6 +96,8 @@ export default function DashboardScreen({ onStart }) {
           <span style={{ fontSize: 22 }}>{achievement.icon}</span>
           <div style={{ fontSize: 13, color: "var(--primary)", fontWeight: 500 }}>{achievement.text}</div>
         </div>
+
+        <ExercisesPanel />
 
         {/* ── CTA ── */}
         <button className="btn-primary" style={{ fontSize: 17, padding: "19px", borderRadius: 17 }} onClick={onStart}>

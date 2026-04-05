@@ -5,6 +5,7 @@ import { useBlockTimer }  from "@/hooks/useBlockTimer";
 import { useMetronome }   from "@/hooks/useMetronome";
 import MetronomePanel     from "@/components/ui/MetronomePanel";
 import PDFViewer          from "@/components/ui/PDFViewer";
+import NotesPanel         from "@/components/session/NotesPanel";
 import { fmt }            from "@/lib/helpers";
 
 const R  = 110;
@@ -15,7 +16,7 @@ function useIsDesktop() {
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 768px)");
     setDesktop(mq.matches);
-    const h = (e) => setDesktop(e.matches);
+    const h = e => setDesktop(e.matches);
     mq.addEventListener("change", h);
     return () => mq.removeEventListener("change", h);
   }, []);
@@ -23,11 +24,12 @@ function useIsDesktop() {
 }
 
 export default function SessionScreen({ blockNum, targetSec, onEnd }) {
-  const timer      = useBlockTimer();
-  const metro      = useMetronome();
-  const isDesktop  = useIsDesktop();
+  const timer     = useBlockTimer();
+  const metro     = useMetronome();
+  const isDesktop = useIsDesktop();
   const [metroExpanded, setMetroExpanded] = useState(false);
   const [pdfOpen,       setPdfOpen]       = useState(false);
+  const [notes,         setNotes]         = useState([]);
 
   useEffect(() => {
     timer.setTarget(targetSec);
@@ -37,12 +39,14 @@ export default function SessionScreen({ blockNum, targetSec, onEnd }) {
   const handleEnd = () => {
     timer.pause();
     metro.stop();
-    onEnd(timer.elapsed);
+    onEnd(timer.elapsed, notes);
   };
+
+  const addNote = (note) => setNotes(prev => [...prev, note]);
 
   const dash = C2 * (1 - timer.progress);
 
-  // ── Timer panel (shared between mobile and desktop) ───────────────────────
+  // ── Timer panel ────────────────────────────────────────────────────────────
   const TimerPanel = (
     <div style={{
       flex: 1, display: "flex", flexDirection: "column",
@@ -50,13 +54,11 @@ export default function SessionScreen({ blockNum, targetSec, onEnd }) {
         ? "40px 32px 32px"
         : "max(40px, env(safe-area-inset-top)) 22px max(24px, env(safe-area-inset-bottom))",
     }}>
-      {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexShrink: 0 }}>
         <div style={{ fontSize: 13, color: "var(--muted)", fontWeight: 500 }}>Block {blockNum}</div>
         <div style={{ fontSize: 13, color: "var(--faint)" }}>Target {Math.floor(targetSec / 60)} min</div>
       </div>
 
-      {/* Circle */}
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 0 }}>
         <div
           className={timer.overtime ? "timer-overtime" : ""}
@@ -82,7 +84,9 @@ export default function SessionScreen({ blockNum, targetSec, onEnd }) {
             {timer.overtime ? (
               <div className="badge badge-orange">+{fmt(timer.elapsed - timer.target)} extra</div>
             ) : (
-              <div style={{ fontSize: 13, color: "var(--faint)" }}>{fmt(Math.max(0, timer.target - timer.elapsed))} left</div>
+              <div style={{ fontSize: 13, color: "var(--faint)" }}>
+                {fmt(Math.max(0, timer.target - timer.elapsed))} left
+              </div>
             )}
             <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
               <button onClick={timer.running ? timer.pause : timer.resume} style={ctrlBtnStyle}>
@@ -96,29 +100,36 @@ export default function SessionScreen({ blockNum, targetSec, onEnd }) {
         </div>
       </div>
 
-      {/* Tools */}
       <div style={{ display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }}>
         <MetronomePanel metro={metro} expanded={metroExpanded} onToggleExpand={() => setMetroExpanded(x => !x)} />
         {!isDesktop && (
-          <button onClick={() => setPdfOpen(true)} style={pdfBtnStyle}>
-            📄 Open Materials
-          </button>
+          <>
+            <NotesPanel elapsed={timer.elapsed} notes={notes} onAddNote={addNote} isDesktop={false} />
+            <button onClick={() => setPdfOpen(true)} style={toolBtnStyle}>📄 Open Materials</button>
+          </>
         )}
       </div>
     </div>
   );
 
-  // ── Desktop: side by side ─────────────────────────────────────────────────
+  // ── Desktop: 3 columns — timer | notes | PDF ───────────────────────────────
   if (isDesktop) return (
     <div className="session-desktop fade-in">
       <div className="timer-panel">{TimerPanel}</div>
+      <div style={{
+        width: 280, flexShrink: 0, borderRight: "1px solid var(--border)",
+        background: "rgba(255,255,255,0.5)", backdropFilter: "blur(10px)",
+        display: "flex", flexDirection: "column",
+      }}>
+        <NotesPanel elapsed={timer.elapsed} notes={notes} onAddNote={addNote} isDesktop={true} />
+      </div>
       <div className="pdf-panel">
         <PDFViewer onClose={() => {}} embedded />
       </div>
     </div>
   );
 
-  // ── Mobile: PDF overlay ───────────────────────────────────────────────────
+  // ── Mobile PDF overlay ─────────────────────────────────────────────────────
   if (pdfOpen) return (
     <div style={{ display: "flex", flexDirection: "column", height: "100dvh" }} className="fade-in">
       <div style={topBarStyle}>
@@ -137,7 +148,6 @@ export default function SessionScreen({ blockNum, targetSec, onEnd }) {
     </div>
   );
 
-  // ── Mobile: timer ─────────────────────────────────────────────────────────
   return (
     <div style={{ height: "100dvh", display: "flex", flexDirection: "column" }} className="fade-in">
       {TimerPanel}
@@ -156,7 +166,7 @@ const ctrlBtnStyle = {
   cursor: "pointer", fontSize: 20,
   display: "flex", alignItems: "center", justifyContent: "center",
 };
-const pdfBtnStyle = {
+const toolBtnStyle = {
   display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
   padding: "13px", borderRadius: 14,
   border: "1.5px solid var(--border)", background: "white",
