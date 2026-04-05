@@ -70,19 +70,20 @@ export default function DashboardScreen({ onStart }) {
         </div>
 
         {/* ── Stats row ── */}
+        {/* ── Stats row ── */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
-          <div className="card">
+          <div className="card" style={{ padding: "16px" }}>
             <div style={eyebrow}>Today</div>
-            <div className="serif" style={{ fontSize: 30, color: "var(--text)" }}>
-              {todayTime === 0 ? "—" : th > 0 ? `${th}h ${tm}m` : `${tm}m`}
+            <div className="serif" style={{ fontSize: 28, color: "var(--primary)" }}>
+              {todayTime === 0 ? "0 blocks" : th > 0 ? `${th}h ${tm}m` : `${tm}m`}
             </div>
             <div style={{ fontSize: 12, color: "var(--faint)", marginTop: 2 }}>
               {todayBlocks.length} block{todayBlocks.length !== 1 ? "s" : ""}
             </div>
           </div>
-          <div className="card">
+          <div className="card" style={{ padding: "16px" }}>
             <div style={eyebrow}>This Week</div>
-            <div className="serif" style={{ fontSize: 30, color: weekBlocks >= 7 ? "#2D5A3D" : weekBlocks >= 3 ? "var(--primary)" : "var(--text)" }}>
+            <div className="serif" style={{ fontSize: 28, color: "var(--primary)" }}>
               {weekBlocks}
             </div>
             <div style={{ fontSize: 12, color: "var(--faint)", marginTop: 2 }}>blocks studied</div>

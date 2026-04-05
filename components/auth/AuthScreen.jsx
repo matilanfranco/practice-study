@@ -42,7 +42,11 @@ export default function AuthScreen() {
   return (
     <div
       className="ps-app fade-in"
-      style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", justifyContent: "center", padding: "40px 28px" }}
+      style={{
+        minHeight: "100dvh",
+        display: "flex", flexDirection: "column", justifyContent: "center",
+        padding: "40px 28px",
+      }}
     >
       <div style={{ marginBottom: 48 }}>
         <div style={eyebrow}>Practice Studio</div>
