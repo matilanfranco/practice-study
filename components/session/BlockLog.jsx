@@ -6,42 +6,26 @@ import { CATEGORIES, PDF_LIST, EXERCISE_CATEGORIES } from "@/lib/constants";
 import { fmt } from "@/lib/helpers";
 import StarRating from "@/components/ui/StarRating";
 
-export default function BlockLog({ elapsed, blockNum, notes: timerNotes = [], onConfirm }) {
+export default function BlockLog({ elapsed, blockNum, exerciseDone = {}, onConfirm }) {
   const { exercises, recordExerciseSession } = useApp();
 
-  const [categories,    setCategories]   = useState([]);
-  const [description,   setDescription]  = useState("");
-  const [focus,         setFocus]        = useState(0);
-  const [dexterity,     setDexterity]    = useState(0);
-  const [notes,         setNotes]        = useState(
-    timerNotes.map(n => `[${fmt(n.time)}] ${n.text}`).join("\n")
-  );
-  const [usedPdf,       setUsedPdf]      = useState(null);
-  const [selectedPdfs,  setSelectedPdfs] = useState([]);
+  const [categories,   setCategories]   = useState([]);
+  const [description,  setDescription]  = useState("");
+  const [focus,        setFocus]        = useState(0);
+  const [dexterity,    setDexterity]    = useState(0);
+  const [notes,        setNotes]        = useState("");
+  const [usedPdf,      setUsedPdf]      = useState(null);
+  const [selectedPdfs, setSelectedPdfs] = useState([]);
 
-  // Exercise selection + BPM/rating per exercise
-  const [selectedExs,   setSelectedExs]  = useState([]); // array of exercise ids
-  const [exStats,       setExStats]      = useState({}); // { [id]: { bpm, rating } }
-
-  const toggleCategory = id =>
-    setCategories(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);
-
-  const togglePdf = id =>
-    setSelectedPdfs(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
-
-  const toggleExercise = id =>
-    setSelectedExs(prev => {
-      if (prev.includes(id)) {
-        const n = { ...exStats };
-        delete n[id];
-        setExStats(n);
-        return prev.filter(e => e !== id);
-      }
-      return [...prev, id];
+  // Pre-load exercises from session
+  const [selectedExs, setSelectedExs] = useState(() => Object.keys(exerciseDone));
+  const [exStats,     setExStats]     = useState(() => {
+    const s = {};
+    Object.entries(exerciseDone).forEach(([id, data]) => {
+      s[id] = { bpm: data.bpm ? String(data.bpm) : "", rating: 0 };
     });
-
-  const setExStat = (id, key, val) =>
-    setExStats(prev => ({ ...prev, [id]: { ...(prev[id] || {}), [key]: val } }));
+    return s;
+  });
 
   const handleConfirm = async () => {
     if (!categories.length) return;

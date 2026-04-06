@@ -69,24 +69,26 @@ function Inner() {
               }}
             />
           )}
-          {phase === "session" && (
-            <SessionScreen
-              blockNum={blockNum}
-              targetSec={targetSec}
-              onEnd={(el, blockNotes) => updateSession({ phase: "log", elapsed: el, blockNotes })}
-            />
-          )}
+         {phase === "session" && (
+          <SessionScreen
+            blockNum={blockNum}
+            targetSec={targetSec}
+            onEnd={(el, exerciseDone) =>
+              updateSession({ phase: "log", elapsed: el, exerciseDone: exerciseDone || {} })
+            }
+          />
+        )}
           {phase === "log" && (
-            <BlockLog
-              elapsed={elapsed}
-              blockNum={blockNum}
-              notes={session.blockNotes || []}
-              onConfirm={(data) => {
-                addBlock({ ...data, blockNum });
-                updateSession({ phase: "break" });
-              }}
-            />
-          )}
+          <BlockLog
+            elapsed={elapsed}
+            blockNum={blockNum}
+            exerciseDone={session.exerciseDone || {}}
+            onConfirm={(data) => {
+              addBlock({ ...data, blockNum });
+              updateSession({ phase: "break" });
+            }}
+          />
+        )}
           {phase === "break" && (
             <BreakScreen
               blockNum={blockNum}

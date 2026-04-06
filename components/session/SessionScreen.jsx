@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useBlockTimer }  from "@/hooks/useBlockTimer";
-import { useMetronome }   from "@/hooks/useMetronome";
-import MetronomePanel     from "@/components/ui/MetronomePanel";
-import PDFViewer          from "@/components/ui/PDFViewer";
-import NotesPanel         from "@/components/session/NotesPanel";
-import { fmt }            from "@/lib/helpers";
+import { useState, useEffect, useRef } from "react";
+import { useBlockTimer }    from "@/hooks/useBlockTimer";
+import { useMetronome }     from "@/hooks/useMetronome";
+import MetronomePanel       from "@/components/ui/MetronomePanel";
+import PDFViewer            from "@/components/ui/PDFViewer";
+import ExerciseTracker      from "@/components/session/ExerciseTracker";
+import { fmt }              from "@/lib/helpers";
 
 const R  = 110;
 const C2 = 2 * Math.PI * R;
@@ -24,12 +24,12 @@ function useIsDesktop() {
 }
 
 export default function SessionScreen({ blockNum, targetSec, onEnd }) {
-  const timer     = useBlockTimer();
-  const metro     = useMetronome();
-  const isDesktop = useIsDesktop();
+  const timer          = useBlockTimer();
+  const metro          = useMetronome();
+  const isDesktop      = useIsDesktop();
   const [metroExpanded, setMetroExpanded] = useState(false);
-  const [pdfOpen,       setPdfOpen]       = useState(false);
-  const [notes,         setNotes]         = useState([]);
+  const [activePanel,   setActivePanel]   = useState("exercises"); // "exercises" | "pdf"
+  const [exerciseDone,  setExerciseDone]  = useState({});
 
   useEffect(() => {
     timer.setTarget(targetSec);
@@ -39,30 +39,126 @@ export default function SessionScreen({ blockNum, targetSec, onEnd }) {
   const handleEnd = () => {
     timer.pause();
     metro.stop();
-    onEnd(timer.elapsed, notes);
+    onEnd(timer.elapsed, exerciseDone);
   };
 
-  const addNote = (note) => setNotes(prev => [...prev, note]);
-
   const dash = C2 * (1 - timer.progress);
+  const doneCt = Object.keys(exerciseDone).length;
 
-  // ── Timer panel ────────────────────────────────────────────────────────────
-  const TimerPanel = (
+  // ── Desktop: 3 columns ────────────────────────────────────────────────────
+  if (isDesktop) return (
+    <div className="session-desktop fade-in">
+      {/* Left: timer */}
+      <div className="timer-panel">
+        <TimerContent
+          timer={timer} metro={metro} blockNum={blockNum} targetSec={targetSec}
+          metroExpanded={metroExpanded} setMetroExpanded={setMetroExpanded}
+          handleEnd={handleEnd} dash={dash} isDesktop={true}
+        />
+      </div>
+
+      {/* Centre: exercises */}
+      <div style={{
+        width: 300, flexShrink: 0, borderRight: "1px solid var(--border)",
+        background: "rgba(255,255,255,0.55)", backdropFilter: "blur(10px)",
+        display: "flex", flexDirection: "column", overflow: "hidden",
+      }}>
+        <ExerciseTracker elapsed={timer.elapsed} onUpdate={setExerciseDone} />
+      </div>
+
+      {/* Right: PDF */}
+      <div className="pdf-panel">
+        <PDFViewer onClose={() => {}} embedded />
+      </div>
+    </div>
+  );
+
+  // ── Mobile ─────────────────────────────────────────────────────────────────
+  return (
+    <div style={{ height: "100dvh", display: "flex", flexDirection: "column" }} className="fade-in">
+      {/* Timer */}
+      <TimerContent
+        timer={timer} metro={metro} blockNum={blockNum} targetSec={targetSec}
+        metroExpanded={metroExpanded} setMetroExpanded={setMetroExpanded}
+        handleEnd={handleEnd} dash={dash} isDesktop={false}
+      />
+
+      {/* Toggle tabs */}
+      <div style={{
+        display: "flex", borderTop: "1px solid var(--border)",
+        background: "rgba(255,255,255,0.9)", backdropFilter: "blur(10px)",
+        flexShrink: 0,
+      }}>
+        {[
+          { id: "exercises", label: "💪 Exercises", badge: doneCt > 0 ? doneCt : null },
+          { id: "pdf",       label: "📄 Materials",  badge: null },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActivePanel(tab.id)}
+            style={{
+              flex: 1, padding: "12px 8px", border: "none", cursor: "pointer",
+              fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 600,
+              transition: "all 0.15s", position: "relative",
+              background: activePanel === tab.id ? "var(--primary-bg)" : "transparent",
+              color:      activePanel === tab.id ? "var(--primary)"    : "var(--muted)",
+              borderBottom: activePanel === tab.id ? "2px solid var(--primary)" : "2px solid transparent",
+            }}
+          >
+            {tab.label}
+            {tab.badge && (
+              <span style={{
+                position: "absolute", top: 6, right: 8,
+                background: "var(--primary)", color: "white",
+                borderRadius: "50%", width: 16, height: 16, fontSize: 10, fontWeight: 700,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                {tab.badge}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Panel content */}
+      <div style={{ flex: 1, overflow: "hidden", background: "rgba(255,255,255,0.6)" }}>
+        {activePanel === "exercises" ? (
+          <ExerciseTracker elapsed={timer.elapsed} onUpdate={setExerciseDone} />
+        ) : (
+          <PDFViewer onClose={() => setActivePanel("exercises")} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Timer content (shared) ─────────────────────────────────────────────────
+function TimerContent({ timer, metro, blockNum, targetSec, metroExpanded, setMetroExpanded, handleEnd, dash, isDesktop }) {
+  const R  = 110;
+  const C2 = 2 * Math.PI * R;
+
+  return (
     <div style={{
-      flex: 1, display: "flex", flexDirection: "column",
+      display: "flex", flexDirection: "column", flexShrink: 0,
       padding: isDesktop
-        ? "40px 32px 32px"
-        : "max(40px, env(safe-area-inset-top)) 22px max(24px, env(safe-area-inset-bottom))",
+        ? "32px 28px 24px"
+        : "max(36px, env(safe-area-inset-top)) 20px 16px",
     }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexShrink: 0 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
         <div style={{ fontSize: 13, color: "var(--muted)", fontWeight: 500 }}>Block {blockNum}</div>
         <div style={{ fontSize: 13, color: "var(--faint)" }}>Target {Math.floor(targetSec / 60)} min</div>
       </div>
 
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 0 }}>
+      {/* Circle */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: isDesktop ? "8px 0" : "4px 0" }}>
         <div
           className={timer.overtime ? "timer-overtime" : ""}
-          style={{ position: "relative", width: "min(260px, 72vw)", height: "min(260px, 72vw)", borderRadius: "50%", flexShrink: 0 }}
+          style={{
+            position: "relative",
+            width:  isDesktop ? 220 : "min(200px, 55vw)",
+            height: isDesktop ? 220 : "min(200px, 55vw)",
+            borderRadius: "50%", flexShrink: 0,
+          }}
         >
           <svg viewBox="0 0 280 280" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
             <circle cx="140" cy="140" r={R} fill="none" stroke="var(--border)" strokeWidth="8" />
@@ -74,25 +170,23 @@ export default function SessionScreen({ blockNum, targetSec, onEnd }) {
               className="timer-ring"
             />
           </svg>
-          <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6 }}>
+          <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4 }}>
             <div
               className={`timer-num ${!timer.running ? "timer-paused" : ""}`}
-              style={{ fontSize: "clamp(36px, 12vw, 54px)", color: "var(--text)", letterSpacing: "-1.5px", lineHeight: 1 }}
+              style={{ fontSize: isDesktop ? 48 : "clamp(32px, 11vw, 46px)", color: "var(--text)", letterSpacing: "-1.5px", lineHeight: 1 }}
             >
               {fmt(timer.elapsed)}
             </div>
             {timer.overtime ? (
-              <div className="badge badge-orange">+{fmt(timer.elapsed - timer.target)} extra</div>
+              <div className="badge badge-orange" style={{ fontSize: 11 }}>+{fmt(timer.elapsed - timer.target)}</div>
             ) : (
-              <div style={{ fontSize: 13, color: "var(--faint)" }}>
-                {fmt(Math.max(0, timer.target - timer.elapsed))} left
-              </div>
+              <div style={{ fontSize: 12, color: "var(--faint)" }}>{fmt(Math.max(0, timer.target - timer.elapsed))} left</div>
             )}
-            <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
+            <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
               <button onClick={timer.running ? timer.pause : timer.resume} style={ctrlBtnStyle}>
                 {timer.running ? "⏸" : "▶"}
               </button>
-              <button onClick={handleEnd} style={{ ...ctrlBtnStyle, background: "var(--primary)", border: "none", color: "white", fontWeight: 700, fontSize: 14 }}>
+              <button onClick={handleEnd} style={{ ...ctrlBtnStyle, background: "var(--primary)", border: "none", color: "white", fontWeight: 700, fontSize: 13 }}>
                 End
               </button>
             </div>
@@ -100,76 +194,17 @@ export default function SessionScreen({ blockNum, targetSec, onEnd }) {
         </div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }}>
+      {/* Metro */}
+      <div style={{ marginTop: 10 }}>
         <MetronomePanel metro={metro} expanded={metroExpanded} onToggleExpand={() => setMetroExpanded(x => !x)} />
-        {!isDesktop && (
-          <>
-            <NotesPanel elapsed={timer.elapsed} notes={notes} onAddNote={addNote} isDesktop={false} />
-            <button onClick={() => setPdfOpen(true)} style={toolBtnStyle}>📄 Open Materials</button>
-          </>
-        )}
       </div>
-    </div>
-  );
-
-  // ── Desktop: 3 columns — timer | notes | PDF ───────────────────────────────
-  if (isDesktop) return (
-    <div className="session-desktop fade-in">
-      <div className="timer-panel">{TimerPanel}</div>
-      <div style={{
-        width: 280, flexShrink: 0, borderRight: "1px solid var(--border)",
-        background: "rgba(255,255,255,0.5)", backdropFilter: "blur(10px)",
-        display: "flex", flexDirection: "column",
-      }}>
-        <NotesPanel elapsed={timer.elapsed} notes={notes} onAddNote={addNote} isDesktop={true} />
-      </div>
-      <div className="pdf-panel">
-        <PDFViewer onClose={() => {}} embedded />
-      </div>
-    </div>
-  );
-
-  // ── Mobile PDF overlay ─────────────────────────────────────────────────────
-  if (pdfOpen) return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100dvh" }} className="fade-in">
-      <div style={topBarStyle}>
-        <div className={`badge ${timer.overtime ? "badge-orange" : "badge-green"}`}>
-          <div style={{ width: 7, height: 7, borderRadius: "50%", background: timer.running ? "var(--primary)" : "var(--faint)" }} />
-          <span className="serif" style={{ fontSize: 15 }}>{fmt(timer.elapsed)}</span>
-          {timer.overtime && <span style={{ fontSize: 11 }}>+{fmt(timer.elapsed - timer.target)}</span>}
-        </div>
-        <div style={{ flex: 1, paddingLeft: 8 }}>
-          <MetronomePanel metro={metro} expanded={false} onToggleExpand={() => {}} />
-        </div>
-      </div>
-      <div style={{ flex: 1, overflow: "hidden" }}>
-        <PDFViewer onClose={() => setPdfOpen(false)} />
-      </div>
-    </div>
-  );
-
-  return (
-    <div style={{ height: "100dvh", display: "flex", flexDirection: "column" }} className="fade-in">
-      {TimerPanel}
     </div>
   );
 }
 
-const topBarStyle = {
-  padding: "max(12px, env(safe-area-inset-top)) 14px 12px",
-  display: "flex", alignItems: "center", gap: 8,
-  borderBottom: "1px solid var(--border)", background: "var(--surface)", flexShrink: 0,
-};
 const ctrlBtnStyle = {
-  width: 52, height: 52, borderRadius: "50%",
+  width: 48, height: 48, borderRadius: "50%",
   border: "1.5px solid var(--primary-xl)", background: "var(--primary-bg)",
-  cursor: "pointer", fontSize: 20,
+  cursor: "pointer", fontSize: 18,
   display: "flex", alignItems: "center", justifyContent: "center",
-};
-const toolBtnStyle = {
-  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-  padding: "13px", borderRadius: 14,
-  border: "1.5px solid var(--border)", background: "white",
-  cursor: "pointer", fontSize: 14, fontWeight: 500, color: "var(--muted)",
-  fontFamily: "DM Sans, sans-serif", transition: "all 0.15s",
 };
