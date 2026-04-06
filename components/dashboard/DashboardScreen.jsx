@@ -48,7 +48,7 @@ export default function DashboardScreen({ onStart }) {
                 <span style={{ fontSize: 16, color: "var(--muted)" }}>days</span>
               </div>
             </div>
-            <span style={{ fontSize: 34 }}>{streak >= 7 ? "🔥" : streak >= 3 ? "✨" : streak >= 1 ? "💚" : "🌱"}</span>
+           <span style={{ fontSize: 34 }}>{streak >= 7 ? "🔥" : streak >= 3 ? "✨" : streak >= 1 ? "✅" : "🌱"}</span>
           </div>
 
           <div style={{ display: "flex", justifyContent: "space-between" }}>
