@@ -17,7 +17,6 @@ export default function BlockLog({ elapsed, blockNum, exerciseDone = {}, onConfi
   const [usedPdf,      setUsedPdf]      = useState(null);
   const [selectedPdfs, setSelectedPdfs] = useState([]);
 
-  // Pre-load exercises from session
   const [selectedExs, setSelectedExs] = useState(() => Object.keys(exerciseDone));
   const [exStats,     setExStats]     = useState(() => {
     const s = {};
@@ -27,10 +26,28 @@ export default function BlockLog({ elapsed, blockNum, exerciseDone = {}, onConfi
     return s;
   });
 
+  const toggleCategory = (id) =>
+    setCategories(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);
+
+  const togglePdf = (id) =>
+    setSelectedPdfs(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
+
+  const toggleExercise = (id) =>
+    setSelectedExs(prev => {
+      if (prev.includes(id)) {
+        const n = { ...exStats };
+        delete n[id];
+        setExStats(n);
+        return prev.filter(e => e !== id);
+      }
+      return [...prev, id];
+    });
+
+  const setExStat = (id, key, val) =>
+    setExStats(prev => ({ ...prev, [id]: { ...(prev[id] || {}), [key]: val } }));
+
   const handleConfirm = async () => {
     if (!categories.length) return;
-
-    // Record stats for each selected exercise
     for (const id of selectedExs) {
       const stats = exStats[id] || {};
       if (stats.bpm || stats.rating) {
@@ -40,7 +57,6 @@ export default function BlockLog({ elapsed, blockNum, exerciseDone = {}, onConfi
         });
       }
     }
-
     onConfirm({
       categories, description, focus, dexterity, notes, duration: elapsed,
       usedPdf: usedPdf === true,
@@ -117,14 +133,14 @@ export default function BlockLog({ elapsed, blockNum, exerciseDone = {}, onConfi
                           padding: "10px 12px", borderRadius: on ? "10px 10px 0 0" : 10,
                           cursor: "pointer", textAlign: "left",
                           fontFamily: "DM Sans, sans-serif", transition: "all 0.15s",
-                          border:     on ? "1.5px solid var(--primary)"  : "1.5px solid var(--border)",
+                          border:       on ? "1.5px solid var(--primary)" : "1.5px solid var(--border)",
                           borderBottom: on ? "none" : undefined,
-                          background: on ? "var(--primary-bg)" : "white",
+                          background:   on ? "var(--primary-bg)" : "white",
                         }}
                       >
                         <div style={{
                           width: 18, height: 18, borderRadius: 5, flexShrink: 0, marginTop: 1,
-                          border: on ? "none" : "1.5px solid var(--border)",
+                          border:     on ? "none" : "1.5px solid var(--border)",
                           background: on ? "var(--primary)" : "transparent",
                           display: "flex", alignItems: "center", justifyContent: "center",
                         }}>
@@ -153,7 +169,6 @@ export default function BlockLog({ elapsed, blockNum, exerciseDone = {}, onConfi
                         </div>
                       </button>
 
-                      {/* BPM + rating inline when selected */}
                       {on && (
                         <div className="fade-in" style={{
                           padding: "10px 12px", borderRadius: "0 0 10px 10px",
@@ -171,8 +186,8 @@ export default function BlockLog({ elapsed, blockNum, exerciseDone = {}, onConfi
                               style={{
                                 width: 70, padding: "5px 8px", borderRadius: 8,
                                 border: "1.5px solid var(--primary-xl)", background: "white",
-                                fontSize: 13, fontFamily: "DM Sans, sans-serif", color: "var(--text)",
-                                outline: "none",
+                                fontSize: 13, fontFamily: "DM Sans, sans-serif",
+                                color: "var(--text)", outline: "none",
                               }}
                             />
                           </div>
@@ -219,19 +234,12 @@ export default function BlockLog({ elapsed, blockNum, exerciseDone = {}, onConfi
       <StarRating value={focus}     onChange={setFocus}     label="Focus level" />
       <StarRating value={dexterity} onChange={setDexterity} label="Dexterity / execution" />
 
-      {/* Notes from timer — pre-filled */}
+      {/* Notes */}
       <div style={{ marginBottom: 24 }}>
-        <div style={fieldLabel}>
-          Block notes
-          {timerNotes.length > 0 && (
-            <span style={{ color: "var(--primary)", fontWeight: 400, marginLeft: 6, fontSize: 12 }}>
-              ({timerNotes.length} note{timerNotes.length > 1 ? "s" : ""} from session)
-            </span>
-          )}
-        </div>
+        <div style={fieldLabel}>Block notes</div>
         <textarea
-          className="input" rows={3}
-          placeholder="Notes from your session..."
+          className="input" rows={2}
+          placeholder="Something to remember for next time..."
           value={notes}
           onChange={e => setNotes(e.target.value)}
         />
@@ -277,7 +285,7 @@ export default function BlockLog({ elapsed, blockNum, exerciseDone = {}, onConfi
                 >
                   <div style={{
                     width: 18, height: 18, borderRadius: 5, flexShrink: 0,
-                    border: on ? "none" : "1.5px solid var(--border)",
+                    border:     on ? "none" : "1.5px solid var(--border)",
                     background: on ? "var(--primary)" : "transparent",
                     display: "flex", alignItems: "center", justifyContent: "center",
                   }}>
